@@ -1,0 +1,13 @@
+{
+  "name": "looping",
+  "version": "1.0.0",
+  "description": "A localhost web application for creating a continuous, peaceful memorial display to honor and remember loved ones.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
