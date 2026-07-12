@@ -3,19 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ate Lyn2's Pictures</title>
+    <title>Loop Hole</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <!-- Drop Zone for adding photos -->
-    <div id="dropZone" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; transition: opacity 0.3s;">
-        <h1 style="font-size: 3rem; margin-bottom: 20px;">📷 Memorial Slideshow</h1>
-        <p style="font-size: 1.5rem; margin-bottom: 40px;">Drag & drop your photos here</p>
-        <p style="font-size: 1rem; opacity: 0.7;">or click anywhere to browse files</p>
-        <div id="progress" style="display: none; margin-top: 30px; text-align: center;">
-            <p id="progressText" style="font-size: 1.2rem; margin-bottom: 10px;">Processing photos...</p>
-            <div style="width: 300px; height: 20px; background: rgba(255,255,255,0.3); border-radius: 10px; overflow: hidden;">
-                <div id="progressBar" style="width: 0%; height: 100%; background: #fff; transition: width 0.3s;"></div>
+    <div id="dropZone" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+        <div style="text-align: center; max-width: 500px; padding: 40px;">
+            <div style="font-size: 4rem; margin-bottom: 24px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));">📷</div>
+            <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.5px;">Memorial Slideshow</h1>
+            <p style="font-size: 1.3rem; margin-bottom: 32px; opacity: 0.9;">Drag & drop your photos here</p>
+            <p style="font-size: 1rem; opacity: 0.7;">or click anywhere to browse files</p>
+        </div>
+        <div id="progress" style="display: none; margin-top: 30px; text-align: center; width: 100%; max-width: 400px; padding: 0 20px;">
+            <p id="progressText" style="font-size: 1.1rem; margin-bottom: 12px; font-weight: 600;">Processing photos...</p>
+            <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.25); border-radius: 3px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
+                <div id="progressBar" style="width: 0%; height: 100%; background: #fff; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 3px; box-shadow: 0 0 8px rgba(255,255,255,0.5);"></div>
             </div>
         </div>
     </div>
@@ -31,50 +34,77 @@
 
         <!-- Control Overlay (shown when paused) -->
         <div id="controlOverlay" class="control-overlay hidden">
-            <div class="controls">
+            <div class="controls-top">
                 <button id="prevBtn" class="control-btn" aria-label="Previous">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M15 18l-6-6 6-6"/>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.5 5.5L9 12l6.5 6.5L17 17l-5-5 5-5-1.5-1.5z"/>
                     </svg>
                 </button>
-                <button id="playPauseBtn" class="control-btn large" aria-label="Play/Pause">
-                    <svg id="playIcon" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M8 5v14l11-7z"/>
-                    </svg>
-                    <svg id="pauseIcon" class="hidden" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
-                        <rect x="6" y="4" width="4" height="16"/>
-                        <rect x="14" y="4" width="4" height="16"/>
-                    </svg>
-                </button>
+                <div class="play-settings-group">
+                    <button id="playPauseBtn" class="control-btn large" aria-label="Play/Pause">
+                        <svg id="playIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5.14v13.72L19 12 8 5.14z"/>
+                        </svg>
+                        <svg id="pauseIcon" class="hidden" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z"/>
+                        </svg>
+                    </button>
+                    <button id="settingsBtn" class="settings-btn" aria-label="Settings">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 8h4V4H3v4zm6 12h4v-4H9v4zm-6 0h4v-4H3v4zm0-6h4v-4H3v4zm6 0h4v-4H9v4zm6-10v4h4V4h-4zm-6 4h4V4H9v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/>
+                        </svg>
+                    </button>
+                </div>
                 <button id="nextBtn" class="control-btn" aria-label="Next">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 18l6-6-6-6"/>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8.5 5.5L15 12l-6.5 6.5L7 17l5-5-5-5 1.5-1.5z"/>
                     </svg>
                 </button>
             </div>
-            <button id="settingsBtn" class="settings-btn" aria-label="Settings">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M12 1v6m0 6v6M1 12h6m6 0h6"/>
-                </svg>
-            </button>
         </div>
 
         <!-- Settings Panel -->
         <div id="settingsPanel" class="settings-panel hidden">
-            <div class="settings-content">
-                <div class="settings-header">
-                    <h2>Menu</h2>
-                    <button id="closeSettings" class="close-btn" aria-label="Close">&times;</button>
-                </div>
+            <div class="settings-header">
+                <h2>Menu</h2>
+                <button id="closeSettings" class="close-btn" aria-label="Close">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+                    </svg>
+                </button>
+            </div>
 
-                <div class="settings-section">
-                    <button id="addMorePhotos" class="primary-btn">➕ Add More Photos</button>
-                    <button id="shufflePhotos" class="primary-btn" style="background: #FF9500;">🔀 Shuffle Photos</button>
-                    <button id="fullscreenBtn" class="primary-btn" style="background: #34C759;">⛶ Fullscreen</button>
-                    <button id="manageContentBtn" class="secondary-btn">📚 Manage Library</button>
-                    <button id="clearAll" class="secondary-btn" style="background: rgba(255,0,0,0.3);">🗑️ Clear All</button>
-                </div>
+            <div class="settings-section">
+                <button id="addMorePhotos" class="primary-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                    Add More Photos
+                </button>
+                <button id="shufflePhotos" class="primary-btn" style="background: rgba(255, 149, 0, 0.9); box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
+                    </svg>
+                    Shuffle Photos
+                </button>
+                <button id="fullscreenBtn" class="primary-btn" style="background: rgba(52, 199, 89, 0.9); box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                    </svg>
+                    Fullscreen
+                </button>
+                <button id="manageContentBtn" class="secondary-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/>
+                    </svg>
+                    Manage Library
+                </button>
+                <button id="clearAll" class="secondary-btn" style="background: rgba(255, 59, 48, 0.15); border-color: rgba(255, 59, 48, 0.3);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    </svg>
+                    Clear All
+                </button>
             </div>
         </div>
 
@@ -106,7 +136,11 @@
             <div class="modal-content large">
                 <div class="modal-header">
                     <h2>Content Library</h2>
-                    <button id="closeLibrary" class="close-btn" aria-label="Close">&times;</button>
+                    <button id="closeLibrary" class="close-btn" aria-label="Close">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+                        </svg>
+                    </button>
                 </div>
                 
                 <div id="libraryList" class="library-list">

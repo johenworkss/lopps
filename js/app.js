@@ -485,9 +485,9 @@ function renderLibrary() {
         return;
     }
     
-    // Add count header
-    const countHeader = `<div style="padding: 15px; background: rgba(0, 122, 255, 0.2); border-radius: 8px; margin-bottom: 15px; text-align: center;">
-        <h3 style="font-size: 18px;">📸 ${photos.length} Photos Loaded</h3>
+    // Add count header with iOS style
+    const countHeader = `<div style="padding: 16px; background: rgba(0, 122, 255, 0.15); border: 0.5px solid rgba(0, 122, 255, 0.3); border-radius: 14px; margin-bottom: 16px; text-align: center;">
+        <h3 style="font-size: 17px; font-weight: 600; letter-spacing: -0.3px;">📸 ${photos.length} Photos Loaded</h3>
     </div>`;
     
     list.innerHTML = countHeader + photos.map((photo, index) => `
@@ -499,9 +499,9 @@ function renderLibrary() {
                 <h4>Photo ${index + 1}</h4>
             </div>
             <div class="library-item-actions">
-                <button class="icon-btn delete" onclick="deletePhoto(${index})">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                <button class="icon-btn delete" onclick="deletePhoto(${index})" aria-label="Delete">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                     </svg>
                 </button>
             </div>

@@ -125,21 +125,21 @@ body {
     opacity: 1;
 }
 
-/* Control Overlay */
+/* Control Overlay - iOS Style */
 .control-overlay {
     position: absolute;
-    bottom: 100px;
+    bottom: 80px;
     left: 50%;
     transform: translateX(-50%);
-    display: flex;
-    gap: 20px;
-    padding: 20px;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(10px);
-    border-radius: 50px;
+    padding: 16px;
+    background: rgba(28, 28, 30, 0.85);
+    backdrop-filter: blur(40px) saturate(180%);
+    border-radius: 24px;
+    border: 0.5px solid rgba(255, 255, 255, 0.15);
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .control-overlay.visible {
@@ -151,27 +151,78 @@ body {
     display: none;
 }
 
+.controls-top {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.play-settings-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
 .control-btn {
-    width: 50px;
-    height: 50px;
+    width: 44px;
+    height: 44px;
     border: none;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.15);
     color: #fff;
-    font-size: 1.5rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+}
+
+.control-btn.large {
+    width: 54px;
+    height: 54px;
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .control-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.05);
+}
+
+.control-btn.large:hover {
     background: rgba(255, 255, 255, 0.3);
 }
 
 .control-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.92);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.settings-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+.settings-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.05);
+}
+
+.settings-btn:active {
+    transform: scale(0.92);
 }
 
 /* Onboarding Screen */
@@ -210,52 +261,79 @@ body {
     opacity: 0.9;
 }
 
-/* Buttons */
+.settings-section {
+    padding: 16px 20px;
+}
+
+.settings-section button {
+    margin-bottom: 10px;
+}
+
+/* Buttons - iOS Style */
 .primary-btn, .secondary-btn {
-    padding: 12px 30px;
-    font-size: 1rem;
+    padding: 12px 20px;
+    font-size: 15px;
+    font-weight: 500;
     border: none;
-    border-radius: 25px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: transform 0.2s ease, background 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
+    letter-spacing: -0.2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .primary-btn {
-    background: #fff;
-    color: #667eea;
-    font-weight: 600;
-    margin-top: 20px;
+    background: rgba(0, 122, 255, 0.9);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(0, 122, 255, 0.25);
 }
 
 .primary-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    background: rgba(0, 122, 255, 1);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(0, 122, 255, 0.35);
+}
+
+.primary-btn:active {
+    transform: translateY(0px);
+    box-shadow: 0 2px 6px rgba(0, 122, 255, 0.25);
 }
 
 .secondary-btn {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
     color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    border: 0.5px solid rgba(255, 255, 255, 0.15);
 }
 
 .secondary-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.25);
 }
 
-/* Settings Panel */
+.secondary-btn:active {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Settings Panel - iOS Style */
 .settings-panel, .content-manager-panel {
     position: absolute;
     top: 0;
     right: 0;
     width: 400px;
     height: 100%;
-    background: rgba(20, 20, 30, 0.95);
-    backdrop-filter: blur(20px);
-    padding: 30px;
+    background: rgba(28, 28, 30, 0.95);
+    backdrop-filter: blur(60px) saturate(180%);
+    padding: 0;
     overflow-y: auto;
     z-index: 900;
     transform: translateX(100%);
-    transition: transform 0.3s ease;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    border-left: 0.5px solid rgba(255, 255, 255, 0.1);
 }
 
 .settings-panel.visible, .content-manager-panel.visible {
@@ -268,32 +346,55 @@ body {
 
 .settings-content, .content-manager-content {
     position: relative;
+    padding: 20px;
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+    background: rgba(28, 28, 30, 0.8);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(40px);
 }
 
 .close-btn {
-    position: absolute;
-    top: 0;
-    right: 0;
-    background: none;
+    background: rgba(255, 255, 255, 0.1);
     border: none;
     color: #fff;
-    font-size: 2rem;
+    font-size: 1.3rem;
     cursor: pointer;
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.close-btn svg {
+    width: 18px;
+    height: 18px;
 }
 
 .close-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
 }
 
-.settings-content h2, .content-manager-content h2 {
-    margin-bottom: 30px;
-    font-size: 1.8rem;
+.close-btn:active {
+    transform: scale(0.92);
+}
+
+.settings-header h2, .settings-content h2, .content-manager-content h2 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
 }
 
 .setting-group {
@@ -459,28 +560,26 @@ body {
 }
 
 
-/* Library List - Added for scrolling */
+/* Library List - iOS Style */
 .library-list {
     display: grid;
-    gap: 15px;
-    margin-bottom: 20px;
+    gap: 12px;
+    padding: 24px;
     max-height: 70vh;
     overflow-y: auto;
-    padding-right: 10px;
 }
 
 .library-list::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
 }
 
 .library-list::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+    background: transparent;
 }
 
 .library-list::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
+    border-radius: 3px;
 }
 
 .library-list::-webkit-scrollbar-thumb:hover {
@@ -489,24 +588,26 @@ body {
 
 .library-item {
     display: flex;
-    gap: 15px;
-    padding: 15px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
     align-items: center;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .library-item:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.12);
+    transform: scale(1.01);
 }
 
 .library-item-preview {
-    width: 80px;
-    height: 80px;
-    border-radius: 6px;
+    width: 70px;
+    height: 70px;
+    border-radius: 10px;
     overflow: hidden;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -524,57 +625,65 @@ body {
 }
 
 .library-item-info h4 {
-    font-size: 16px;
-    font-weight: 500;
-    margin-bottom: 5px;
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
 }
 
 .library-item-info p {
     font-size: 14px;
-    color: #aaa;
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .library-item-actions {
     display: flex;
-    gap: 10px;
+    gap: 8px;
 }
 
 .icon-btn {
-    padding: 8px;
+    padding: 10px;
     background: rgba(255, 255, 255, 0.1);
-    border: none;
-    border-radius: 6px;
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
     color: #fff;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .icon-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.05);
+}
+
+.icon-btn:active {
+    transform: scale(0.92);
 }
 
 .icon-btn.delete:hover {
-    background: rgba(255, 0, 0, 0.3);
+    background: rgba(255, 59, 48, 0.3);
+    border-color: rgba(255, 59, 48, 0.5);
 }
 
 
-/* Modal Styles */
+/* Modal Styles - iOS Style */
 .modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.95);
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(20px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 10000;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
 }
 
@@ -584,17 +693,23 @@ body {
 }
 
 .modal-content {
-    background: rgba(20, 20, 20, 0.98);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 30px;
+    background: rgba(28, 28, 30, 0.98);
+    backdrop-filter: blur(60px) saturate(180%);
+    border: 0.5px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    padding: 0;
     width: 90%;
     max-width: 700px;
     max-height: 85vh;
-    overflow-y: auto;
-    backdrop-filter: blur(20px);
+    overflow: hidden;
     position: relative;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    transform: scale(0.95);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal.visible .modal-content {
+    transform: scale(1);
 }
 
 .modal-content::-webkit-scrollbar {
@@ -602,8 +717,7 @@ body {
 }
 
 .modal-content::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 5px;
+    background: transparent;
 }
 
 .modal-content::-webkit-scrollbar-thumb {
@@ -623,22 +737,27 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 24px 24px 20px 24px;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+    background: rgba(28, 28, 30, 0.95);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(40px);
 }
 
 .modal-header h2 {
     font-size: 24px;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: -0.5px;
 }
 
 .modal-actions {
     display: flex;
-    gap: 10px;
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 12px;
+    padding: 20px 24px;
+    border-top: 0.5px solid rgba(255, 255, 255, 0.1);
+    background: rgba(28, 28, 30, 0.95);
 }
 
 .modal-actions button {
