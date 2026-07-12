@@ -19,6 +19,10 @@ let audioData = null;
 let displayMode = 'contain'; // 'contain' (fit) or 'cover' (fill)
 let showCounter = true;
 
+// Video preferences
+let autoPlayVideos = true;
+let loopVideos = true;
+
 // Initialize Lottie Clock Animation
 function initClockAnimation() {
     const clockContainer = document.getElementById('clockAnimation');
@@ -133,7 +137,7 @@ function showActionSheet(title, message, buttons) {
 // Initialize IndexedDB
 function initDB() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open('MemorialDB', 2); // Increment version for music storage
+        const request = indexedDB.open('MemorialDB', 4); // Increment version for background
         
         request.onerror = () => reject(request.error);
         request.onsuccess = () => {
@@ -153,8 +157,171 @@ function initDB() {
             if (!db.objectStoreNames.contains('music')) {
                 db.createObjectStore('music', { keyPath: 'id' });
             }
+            
+            // Create presets store if it doesn't exist
+            if (!db.objectStoreNames.contains('presets')) {
+                db.createObjectStore('presets', { keyPath: 'id', autoIncrement: true });
+            }
+            
+            // Create background store if it doesn't exist
+            if (!db.objectStoreNames.contains('background')) {
+                db.createObjectStore('background', { keyPath: 'id' });
+            }
         };
     });
+}
+
+// Background Functions
+const DEFAULT_BG = "url('icons/heaven.gif') center center / cover no-repeat";
+
+async function saveBackground(dataUrl) {
+    if (!db) await initDB();
+    const transaction = db.transaction(['background'], 'readwrite');
+    const store = transaction.objectStore('background');
+    await store.clear();
+    await store.add({ id: 'custom', dataUrl });
+    applyBackground(dataUrl);
+    showToast('Background updated!', '🎨');
+}
+
+async function loadBackground() {
+    if (!db) await initDB();
+    return new Promise((resolve) => {
+        const transaction = db.transaction(['background'], 'readonly');
+        const store = transaction.objectStore('background');
+        const request = store.get('custom');
+        request.onsuccess = () => {
+            resolve(request.result?.dataUrl || null);
+        };
+        request.onerror = () => resolve(null);
+    });
+}
+
+function applyBackground(dataUrl) {
+    const bgStyle = dataUrl 
+        ? `url('${dataUrl}') center center / cover no-repeat` 
+        : DEFAULT_BG;
+    
+    document.body.style.background = bgStyle;
+    document.getElementById('dropZone').style.background = bgStyle;
+    document.getElementById('bgPreview').style.background = bgStyle;
+}
+
+async function resetBackground() {
+    const confirmed = await showActionSheet(
+        'Reset Background',
+        'Are you sure you want to reset to the default background?',
+        [
+            { text: 'Reset', style: 'destructive', action: () => true },
+            { text: 'Cancel', style: 'cancel', action: () => false }
+        ]
+    );
+    
+    if (confirmed) {
+        if (!db) await initDB();
+        const transaction = db.transaction(['background'], 'readwrite');
+        const store = transaction.objectStore('background');
+        await store.clear();
+        applyBackground(null);
+        showToast('Background reset!', '✅');
+    }
+}
+
+// Preset Functions
+async function savePreset(name) {
+    if (!db) await initDB();
+    if (!name.trim()) {
+        showToast('Please enter a preset name', '⚠️');
+        return;
+    }
+    
+    const preset = {
+        name: name.trim(),
+        order: photos.map(p => p.id),
+        createdAt: new Date().toISOString()
+    };
+    
+    const transaction = db.transaction(['presets'], 'readwrite');
+    const store = transaction.objectStore('presets');
+    await store.add(preset);
+    
+    showToast(`Preset "${name}" saved!`, '💾');
+    renderPresets();
+}
+
+async function loadPresets() {
+    if (!db) await initDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['presets'], 'readonly');
+        const store = transaction.objectStore('presets');
+        const request = store.getAll();
+        
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function applyPreset(preset) {
+    // Reorder photos based on preset order
+    const newOrder = [];
+    for (const id of preset.order) {
+        const item = photos.find(p => p.id === id);
+        if (item) newOrder.push(item);
+    }
+    // Add any items not in the preset (in case items were added later)
+    for (const item of photos) {
+        if (!newOrder.find(p => p.id === item.id)) {
+            newOrder.push(item);
+        }
+    }
+    photos = newOrder;
+    await savePhotos();
+    renderLibrary();
+    currentIndex = 0;
+    displayCurrentContent();
+    showToast(`Applied preset "${preset.name}"`, '✅');
+}
+
+async function deletePreset(presetId, presetName) {
+    const confirmed = await showActionSheet(
+        'Delete Preset',
+        `Are you sure you want to delete "${presetName}"?`,
+        [
+            { text: 'Delete', style: 'destructive', action: () => true },
+            { text: 'Cancel', style: 'cancel', action: () => false }
+        ]
+    );
+    
+    if (confirmed) {
+        if (!db) await initDB();
+        const transaction = db.transaction(['presets'], 'readwrite');
+        const store = transaction.objectStore('presets');
+        await store.delete(presetId);
+        showToast('Preset deleted', '🗑️');
+        renderPresets();
+    }
+}
+
+async function renderPresets() {
+    const container = document.getElementById('presetsContainer');
+    if (!container) return;
+    
+    const presets = await loadPresets();
+    if (presets.length === 0) {
+        container.innerHTML = '<span style="opacity: 0.5; font-size: 13px;">No presets yet</span>';
+        return;
+    }
+    
+    container.innerHTML = presets.map(preset => `
+        <div class="preset-btn" data-id="${preset.id}">
+            <span onclick="applyPreset(${JSON.stringify(preset).replace(/"/g, '&quot;')})">${preset.name}</span>
+            <span class="delete-preset" onclick="event.stopPropagation(); deletePreset(${preset.id}, '${preset.name.replace(/'/g, "\\'")}')">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+                </svg>
+            </span>
+        </div>
+    `).join('');
 }
 
 // Save photos to IndexedDB
@@ -187,9 +354,14 @@ async function loadPhotos() {
         
         request.onsuccess = () => {
             photos = request.result || [];
+            // Ensure all items have a type (default to 'image' for existing items)
+            photos = photos.map(item => ({
+                ...item,
+                type: item.type || 'image'
+            }));
             // Sort by ID to maintain order
             photos.sort((a, b) => a.id - b.id);
-            console.log(`✓ Loaded ${photos.length} photos from IndexedDB`);
+            console.log(`✓ Loaded ${photos.length} items from IndexedDB`);
             resolve(photos);
         };
         
@@ -257,10 +429,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize clock animation
     initClockAnimation();
     
-    // Initialize DB and load photos FIRST
+    // Initialize DB and load everything
     await initDB();
     await loadPhotos();
     await loadMusic(); // Load saved music if exists
+    const savedBg = await loadBackground(); // Load saved background
+    if (savedBg) applyBackground(savedBg);
     
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
@@ -366,6 +540,53 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             showToast(`Counter: ${showCounter ? 'On' : 'Off'}`, showCounter ? '👁️' : '🚫');
         });
+    }
+    
+    // Video Settings - Auto-play
+    const autoPlayVideosToggle = document.getElementById('autoPlayVideos');
+    if (autoPlayVideosToggle) {
+        autoPlayVideosToggle.addEventListener('change', (e) => {
+            autoPlayVideos = e.target.checked;
+            showToast(`Auto-play videos: ${autoPlayVideos ? 'On' : 'Off'}`, autoPlayVideos ? '▶️' : '⏸️');
+        });
+    }
+    
+    // Video Settings - Loop
+    const loopVideosToggle = document.getElementById('loopVideos');
+    if (loopVideosToggle) {
+        loopVideosToggle.addEventListener('change', (e) => {
+            loopVideos = e.target.checked;
+            showToast(`Loop videos: ${loopVideos ? 'On' : 'Off'}`, loopVideos ? '🔁' : '⏹️');
+        });
+    }
+    
+    // Background Settings
+    const uploadBgBtn = document.getElementById('uploadBgBtn');
+    const bgFileInput = document.getElementById('bgFileInput');
+    const resetBgBtn = document.getElementById('resetBgBtn');
+    
+    if (uploadBgBtn) {
+        uploadBgBtn.addEventListener('click', () => {
+            bgFileInput.click();
+        });
+    }
+    
+    if (bgFileInput) {
+        bgFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    await saveBackground(event.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+            e.target.value = '';
+        });
+    }
+    
+    if (resetBgBtn) {
+        resetBgBtn.addEventListener('click', resetBackground);
     }
     
     // Settings button
@@ -521,10 +742,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     const closeLibraryBtn = document.getElementById('closeLibraryBtn');
     
     if (manageContentBtn) {
-        manageContentBtn.addEventListener('click', () => {
+        manageContentBtn.addEventListener('click', async () => {
             renderLibrary();
+            await renderPresets();
             libraryModal.classList.remove('hidden');
             libraryModal.classList.add('visible');
+        });
+    }
+    
+    // Preset Save Button
+    const savePresetBtn = document.getElementById('savePresetBtn');
+    const presetNameInput = document.getElementById('presetNameInput');
+    
+    if (savePresetBtn) {
+        savePresetBtn.addEventListener('click', async () => {
+            await savePreset(presetNameInput.value);
+            presetNameInput.value = '';
+        });
+    }
+    
+    if (presetNameInput) {
+        presetNameInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                await savePreset(presetNameInput.value);
+                presetNameInput.value = '';
+            }
         });
     }
     
@@ -694,98 +936,113 @@ function handleFiles(files) {
     
     let loaded = 0;
     const totalFiles = files.length;
-    const startingPhotoCount = photos.length;
+    const startingCount = photos.length;
     
     files.forEach((file, index) => {
+        const isVideo = file.type.startsWith('video/');
         const reader = new FileReader();
-        reader.onload = (e) => {
-            // Compress image to reduce size
-            const img = new Image();
-            img.onload = async () => {
-                // Create canvas to compress
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                
-                // Resize to max 1280x720 to save MORE space
-                let width = img.width;
-                let height = img.height;
-                const maxSize = 1280;
-                
-                if (width > maxSize || height > maxSize) {
-                    if (width > height) {
-                        height = (height / width) * maxSize;
-                        width = maxSize;
-                    } else {
-                        width = (width / height) * maxSize;
-                        height = maxSize;
-                    }
-                }
-                
-                canvas.width = width;
-                canvas.height = height;
-                ctx.drawImage(img, 0, 0, width, height);
-                
-                // Compress to JPEG with 70% quality for smaller size
-                const compressedData = canvas.toDataURL('image/jpeg', 0.7);
-                
+        
+        reader.onload = async (e) => {
+            if (isVideo) {
+                // Handle video
                 photos.push({
                     id: Date.now() + Math.random(),
-                    data: compressedData
+                    data: e.target.result,
+                    type: 'video'
                 });
-                
                 loaded++;
-                
-                // Update progress
-                const percent = Math.round((loaded / totalFiles) * 100);
-                progressBar.style.width = percent + '%';
-                progressText.textContent = `Processing ${loaded} of ${totalFiles} photos...`;
-                
-                if (loaded === totalFiles) {
-                    // Save to IndexedDB (no size limit!)
-                    try {
-                        await savePhotos();
-                        progressText.textContent = `✓ Added ${totalFiles} photos!`;
-                        
-                        // Show iOS toast notification
-                        const photosAdded = totalFiles;
-                        const totalPhotos = photos.length;
-                        if (startingPhotoCount > 0) {
-                            // User added more photos to existing collection
-                            showToast(`${photosAdded} photo${photosAdded > 1 ? 's' : ''} added • ${totalPhotos} total`, '✓');
+                processNextFile();
+            } else {
+                // Handle image with compression
+                const img = new Image();
+                img.onload = async () => {
+                    // Create canvas to compress
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Resize to max 1280x720 to save space
+                    let width = img.width;
+                    let height = img.height;
+                    const maxSize = 1280;
+                    
+                    if (width > maxSize || height > maxSize) {
+                        if (width > height) {
+                            height = (height / width) * maxSize;
+                            width = maxSize;
                         } else {
-                            // First photos added
-                            showToast(`${photosAdded} photo${photosAdded > 1 ? 's' : ''} added`, '✓');
+                            width = (width / height) * maxSize;
+                            height = maxSize;
                         }
-                    } catch (err) {
-                        progressText.textContent = `⚠ Error saving photos`;
-                        console.error(err);
-                        showToast('Error saving photos', '⚠️');
                     }
                     
-                    setTimeout(() => {
-                        progress.style.display = 'none';
-                        
-                        // Hide drop zone if it's showing
-                        const dropZone = document.getElementById('dropZone');
-                        if (dropZone.style.display !== 'none') {
-                            dropZone.style.opacity = '0';
-                            setTimeout(() => {
-                                dropZone.style.display = 'none';
-                            }, 300);
-                        }
-                        
-                        // Start if first photos or restart if already playing
-                        if (startingPhotoCount === 0) {
-                            startLoop();
-                        } else if (isPlaying) {
-                            // If already playing, continue playing
-                            displayCurrentContent();
-                        }
-                    }, 1000);
-                }
-            };
-            img.src = e.target.result;
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Compress to JPEG with 70% quality
+                    const compressedData = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    photos.push({
+                        id: Date.now() + Math.random(),
+                        data: compressedData,
+                        type: 'image'
+                    });
+                    
+                    loaded++;
+                    processNextFile();
+                };
+                img.src = e.target.result;
+            }
         };
+        
+        const processNextFile = async () => {
+            // Update progress
+            const percent = Math.round((loaded / totalFiles) * 100);
+            progressBar.style.width = percent + '%';
+            progressText.textContent = `Processing ${loaded} of ${totalFiles} files...`;
+            
+            if (loaded === totalFiles) {
+                // Save to IndexedDB
+                try {
+                    await savePhotos();
+                    progressText.textContent = `✓ Added ${totalFiles} file${totalFiles > 1 ? 's' : ''}!`;
+                    
+                    // Show iOS toast notification
+                    const itemsAdded = totalFiles;
+                    const totalItems = photos.length;
+                    if (startingCount > 0) {
+                        showToast(`${itemsAdded} item${itemsAdded > 1 ? 's' : ''} added • ${totalItems} total`, '✓');
+                    } else {
+                        showToast(`${itemsAdded} item${itemsAdded > 1 ? 's' : ''} added`, '✓');
+                    }
+                } catch (err) {
+                    progressText.textContent = `⚠ Error saving files`;
+                    console.error(err);
+                    showToast('Error saving files', '⚠️');
+                }
+                
+                setTimeout(() => {
+                    progress.style.display = 'none';
+                    
+                    // Hide drop zone if it's showing
+                    const dropZone = document.getElementById('dropZone');
+                    if (dropZone.style.display !== 'none') {
+                        dropZone.style.opacity = '0';
+                        setTimeout(() => {
+                            dropZone.style.display = 'none';
+                        }, 300);
+                    }
+                    
+                    // Start if first photos or restart if already playing
+                    if (startingCount === 0) {
+                        startLoop();
+                    } else if (isPlaying) {
+                        displayCurrentContent();
+                    }
+                }, 1000);
+            }
+        };
+        
         reader.readAsDataURL(file);
     });
 }
@@ -871,8 +1128,8 @@ function displayCurrentContent() {
     const container = document.getElementById('currentContent');
     if (!container || photos.length === 0) return;
     
-    const photo = photos[currentIndex];
-    if (!photo) return;
+    const item = photos[currentIndex];
+    if (!item) return;
     
     // Update photo counter
     updatePhotoCounter();
@@ -882,20 +1139,56 @@ function displayCurrentContent() {
     container.style.transition = `opacity ${TRANSITION_DURATION}s ease-in-out`;
     
     setTimeout(() => {
-        const img = document.createElement('img');
-        img.src = photo.data;
-        img.alt = 'Memorial photo';
-        img.style.objectFit = displayMode; // Apply display mode (contain or cover)
-        
         container.innerHTML = '';
-        container.appendChild(img);
         
-        setTimeout(() => {
-            container.style.opacity = '1';
-        }, 50);
-        
-        if (isPlaying) {
-            scheduleNext();
+        if (item.type === 'video') {
+            // Display video
+            const video = document.createElement('video');
+            video.src = item.data;
+            video.style.objectFit = displayMode;
+            video.controls = false;
+            video.muted = true; // Muted by default for auto-play
+            video.setAttribute('playsinline', ''); // For iOS
+            
+            if (loopVideos) {
+                video.loop = true;
+            }
+            
+            video.addEventListener('loadedmetadata', () => {
+                setTimeout(() => {
+                    container.style.opacity = '1';
+                }, 50);
+                
+                if (autoPlayVideos && isPlaying) {
+                    video.play().catch(e => console.log('Video play prevented:', e));
+                }
+            });
+            
+            if (!loopVideos && isPlaying) {
+                video.addEventListener('ended', () => {
+                    scheduleNext();
+                });
+            } else if (isPlaying) {
+                scheduleNext();
+            }
+            
+            container.appendChild(video);
+        } else {
+            // Display image
+            const img = document.createElement('img');
+            img.src = item.data;
+            img.alt = 'Memorial photo';
+            img.style.objectFit = displayMode;
+            
+            container.appendChild(img);
+            
+            setTimeout(() => {
+                container.style.opacity = '1';
+            }, 50);
+            
+            if (isPlaying) {
+                scheduleNext();
+            }
         }
     }, TRANSITION_DURATION * 1000);
 }
@@ -928,27 +1221,47 @@ function scheduleNext() {
     }, PHOTO_DURATION * 1000);
 }
 
+let draggedIndex = null;
+
 function renderLibrary() {
     const list = document.getElementById('libraryList');
     if (!list) return;
     
     if (photos.length === 0) {
-        list.innerHTML = '<p style="text-align: center; opacity: 0.6; padding: 40px;">No photos yet.</p>';
+        list.innerHTML = '<p style="text-align: center; opacity: 0.6; padding: 40px;">No photos or videos yet.</p>';
         return;
+    }
+    
+    // Count photos and videos
+    const photoCount = photos.filter(p => p.type !== 'video').length;
+    const videoCount = photos.filter(p => p.type === 'video').length;
+    let countText = '';
+    if (photoCount > 0 && videoCount > 0) {
+        countText = `📸 ${photoCount} Photo${photoCount > 1 ? 's' : ''} • 📹 ${videoCount} Video${videoCount > 1 ? 's' : ''} • ↕️ Drag to reorder`;
+    } else if (photoCount > 0) {
+        countText = `📸 ${photoCount} Photo${photoCount > 1 ? 's' : ''} • ↕️ Drag to reorder`;
+    } else {
+        countText = `📹 ${videoCount} Video${videoCount > 1 ? 's' : ''} • ↕️ Drag to reorder`;
     }
     
     // Add count header with iOS style
     const countHeader = `<div style="padding: 12px 16px; background: rgba(0, 122, 255, 0.15); border: 0.5px solid rgba(0, 122, 255, 0.3); border-radius: 12px; margin-bottom: 12px; text-align: center;">
-        <h3 style="font-size: 15px; font-weight: 600; letter-spacing: -0.2px;">📸 ${photos.length} Photos Loaded</h3>
+        <h3 style="font-size: 15px; font-weight: 600; letter-spacing: -0.2px;">${countText}</h3>
     </div>`;
     
-    list.innerHTML = countHeader + photos.map((photo, index) => `
-        <div class="library-item">
+    list.innerHTML = countHeader + photos.map((item, index) => `
+        <div class="library-item" draggable="true" data-index="${index}">
+            <div class="drag-handle">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm0-6c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm0-6c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm6 12c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm0-6c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm0-6c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2z"/>
+                </svg>
+            </div>
             <div class="library-item-preview">
-                <img src="${photo.data}" alt="Photo ${index + 1}">
+                <img src="${item.data}" alt="${item.type === 'video' ? 'Video' : 'Photo'} ${index + 1}">
+                ${item.type === 'video' ? '<div class="video-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>VIDEO</div>' : ''}
             </div>
             <div class="library-item-info">
-                <h4>Photo ${index + 1}</h4>
+                <h4>${item.type === 'video' ? 'Video' : 'Photo'} ${index + 1}</h4>
             </div>
             <div class="library-item-actions">
                 <button class="icon-btn delete" onclick="deletePhoto(${index})" aria-label="Delete">
@@ -959,6 +1272,63 @@ function renderLibrary() {
             </div>
         </div>
     `).join('');
+    
+    // Add drag and drop listeners
+    const items = list.querySelectorAll('.library-item');
+    items.forEach(item => {
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragend', handleDragEnd);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('dragleave', handleDragLeave);
+        item.addEventListener('drop', handleDrop);
+    });
+}
+
+function handleDragStart(e) {
+    draggedIndex = parseInt(e.target.dataset.index);
+    e.target.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragEnd(e) {
+    e.target.classList.remove('dragging');
+    document.querySelectorAll('.library-item').forEach(item => {
+        item.classList.remove('drag-over');
+    });
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const item = e.target.closest('.library-item');
+    if (item && item.dataset.index !== String(draggedIndex)) {
+        item.classList.add('drag-over');
+    }
+}
+
+function handleDragLeave(e) {
+    const item = e.target.closest('.library-item');
+    if (item) {
+        item.classList.remove('drag-over');
+    }
+}
+
+async function handleDrop(e) {
+    e.preventDefault();
+    const targetItem = e.target.closest('.library-item');
+    if (!targetItem) return;
+    
+    const targetIndex = parseInt(targetItem.dataset.index);
+    if (targetIndex === draggedIndex) return;
+    
+    // Reorder the array
+    const [removed] = photos.splice(draggedIndex, 1);
+    photos.splice(targetIndex, 0, removed);
+    
+    // Save and re-render
+    await savePhotos();
+    renderLibrary();
+    showToast('Order updated!', '🔄');
 }
 
 function deletePhoto(index) {

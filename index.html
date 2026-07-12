@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>re wi nd</title>
+    <title>rew . ind</title>
     <link rel="icon" type="image/x-icon" href="icons/iconers.ico">
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
@@ -14,7 +14,7 @@
         <div style="text-align: center; max-width: 500px; padding: 40px; pointer-events: auto;">
             <div id="clockAnimation" style="width: 200px; height: 200px; margin: 0 auto 24px auto; pointer-events: none;"></div>
             <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.5px; text-shadow: 0 2px 8px rgba(0,0,0,0.5); pointer-events: none;">Jhe Memorial</h1>
-            <button id="addPhotosBtn" style="font-size: 1.3rem; padding: 16px 32px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 14px; color: #fff; font-weight: 600; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing: -0.2px;">Drag or even drop your photos here</button>
+            <button id="addPhotosBtn" style="font-size: 1.3rem; padding: 16px 32px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 14px; color: #fff; font-weight: 600; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing: -0.2px;">Drag or drop photos & videos here</button>
         </div>
         <div id="progress" style="display: none; margin-top: 30px; text-align: center; width: 100%; max-width: 400px; padding: 0 20px; pointer-events: auto;">
             <p id="progressText" style="font-size: 1.1rem; margin-bottom: 12px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Processing photos...</p>
@@ -24,7 +24,7 @@
         </div>
     </div>
     
-    <input type="file" id="fileInput" accept="image/*" multiple style="display: none;">
+    <input type="file" id="fileInput" accept="image/*,video/*" multiple style="display: none;">
     
     <div class="memorial-container">
         <!-- Content Display Area -->
@@ -197,6 +197,45 @@
                     </svg>
                     Manage Library
                 </button>
+                <div style="height: 1px; background: rgba(255, 255, 255, 0.1); margin: 16px 0;"></div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; opacity: 0.8;">📹 Video Settings</label>
+                    
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 12px; background: rgba(255, 255, 255, 0.05); border: 0.5px solid rgba(255, 255, 255, 0.1); border-radius: 10px; transition: all 0.2s; margin-bottom: 8px;">
+                        <input type="checkbox" id="autoPlayVideos" checked style="width: 20px; height: 20px; cursor: pointer; accent-color: #007AFF;">
+                        <span style="flex: 1; font-size: 14px; font-weight: 500;">Auto-play videos</span>
+                    </label>
+                    
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 12px; background: rgba(255, 255, 255, 0.05); border: 0.5px solid rgba(255, 255, 255, 0.1); border-radius: 10px; transition: all 0.2s;">
+                        <input type="checkbox" id="loopVideos" checked style="width: 20px; height: 20px; cursor: pointer; accent-color: #007AFF;">
+                        <span style="flex: 1; font-size: 14px; font-weight: 500;">Loop videos</span>
+                    </label>
+                </div>
+
+                <div style="height: 1px; background: rgba(255, 255, 255, 0.1); margin: 16px 0;"></div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; opacity: 0.8;">🎨 Background</label>
+                    <div id="bgPreviewContainer" style="width: 100%; height: 100px; border-radius: 10px; overflow: hidden; border: 0.5px solid rgba(255, 255, 255, 0.15); margin-bottom: 10px;">
+                        <div id="bgPreview" style="width: 100%; height: 100%; background: url('icons/heaven.gif') center center / cover no-repeat;"></div>
+                    </div>
+                    <input type="file" id="bgFileInput" accept="image/*,image/gif" style="display: none;">
+                    <div style="display: flex; gap: 8px;">
+                        <button id="uploadBgBtn" class="primary-btn" style="flex: 1; padding: 10px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px;">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                            </svg>
+                            Upload
+                        </button>
+                        <button id="resetBgBtn" class="secondary-btn" style="padding: 10px;">
+                            Reset
+                        </button>
+                    </div>
+                </div>
+
+                <div style="height: 1px; background: rgba(255, 255, 255, 0.1); margin: 16px 0;"></div>
+
                 <button id="clearAll" class="secondary-btn" style="background: rgba(255, 59, 48, 0.15); border-color: rgba(255, 59, 48, 0.3);">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
@@ -210,46 +249,63 @@
         <div id="addContentModal" class="modal hidden">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>Add Photos</h2>
-                    <button id="closeAddContent" class="close-btn" aria-label="Close">&times;</button>
-                </div>
-                
-                <div class="input-section">
-                    <label class="file-upload">
-                        <input type="file" id="photoFile" accept="image/*" multiple>
-                        <span>📷 Click to Choose Photos</span>
-                    </label>
-                    <div id="photoPreview" class="preview-grid hidden"></div>
-                </div>
+                <h2>Add Photos & Videos</h2>
+                <button id="closeAddContent" class="close-btn" aria-label="Close">&times;</button>
+            </div>
+            
+            <div class="input-section">
+                <label class="file-upload">
+                    <input type="file" id="photoFile" accept="image/*,video/*" multiple>
+                    <span>📷 Click to Choose Photos & Videos</span>
+                </label>
+                <div id="photoPreview" class="preview-grid hidden"></div>
+            </div>
 
-                <div class="modal-actions">
-                    <button id="saveContent" class="primary-btn">Add Photos</button>
-                    <button id="cancelAddContent" class="secondary-btn">Cancel</button>
-                </div>
+            <div class="modal-actions">
+                <button id="saveContent" class="primary-btn">Add Content</button>
+                <button id="cancelAddContent" class="secondary-btn">Cancel</button>
+            </div>
             </div>
         </div>
 
         <!-- Content Library Modal -->
-        <div id="libraryModal" class="modal hidden">
-            <div class="modal-content large">
-                <div class="modal-header">
-                    <h2>Content Library</h2>
-                    <button id="closeLibrary" class="close-btn" aria-label="Close">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+    <div id="libraryModal" class="modal hidden">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2>Content Library</h2>
+                <button id="closeLibrary" class="close-btn" aria-label="Close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Presets Section -->
+            <div style="padding: 12px 20px; border-bottom: 0.5px solid rgba(255,255,255,0.1);">
+                <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; opacity: 0.8;">📋 Order Presets</label>
+                <div id="presetsContainer" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <!-- Presets will be dynamically added here -->
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 8px;">
+                    <input type="text" id="presetNameInput" placeholder="Enter preset name..." style="flex: 1; padding: 10px 12px; background: rgba(255,255,255,0.08); border: 0.5px solid rgba(255,255,255,0.15); border-radius: 10px; color: white; font-size: 14px;">
+                    <button id="savePresetBtn" class="primary-btn" style="padding: 10px 16px; width: auto;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px;">
+                            <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z"/>
                         </svg>
+                        Save
                     </button>
                 </div>
-                
-                <div id="libraryList" class="library-list">
-                    <!-- Content items will be dynamically added here -->
-                </div>
+            </div>
+            
+            <div id="libraryList" class="library-list">
+                <!-- Content items will be dynamically added here -->
+            </div>
 
-                <div class="modal-actions">
-                    <button id="closeLibraryBtn" class="secondary-btn">Close</button>
-                </div>
+            <div class="modal-actions">
+                <button id="closeLibraryBtn" class="secondary-btn">Close</button>
             </div>
         </div>
+    </div>
     </div>
 
     <script src="js/app.js"></script>
