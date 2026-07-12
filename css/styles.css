@@ -559,40 +559,170 @@ body {
     display: block !important;
 }
 
+/* iOS-style Toast Notification */
+.ios-toast {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: rgba(28, 28, 30, 0.92);
+    backdrop-filter: blur(40px) saturate(180%);
+    color: #fff;
+    padding: 14px 20px;
+    border-radius: 14px;
+    border: 0.5px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    z-index: 20000;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.2px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    max-width: 90%;
+    min-width: 280px;
+}
+
+.ios-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.ios-toast-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+/* iOS-style Action Sheet (for confirmations) */
+.ios-action-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 25000;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ios-action-sheet.show {
+    transform: translateY(0);
+}
+
+.ios-action-sheet-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+    z-index: 24999;
+    opacity: 0;
+    transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+.ios-action-sheet-backdrop.show {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.ios-action-sheet-content {
+    background: rgba(28, 28, 30, 0.98);
+    backdrop-filter: blur(60px) saturate(180%);
+    border-radius: 14px 14px 0 0;
+    padding: 20px 16px 34px 16px;
+}
+
+.ios-action-sheet-header {
+    text-align: center;
+    padding: 16px 20px;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+}
+
+.ios-action-sheet-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.ios-action-sheet-message {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.4;
+}
+
+.ios-action-sheet-buttons {
+    margin-top: 8px;
+}
+
+.ios-action-sheet-button {
+    width: 100%;
+    padding: 16px;
+    background: transparent;
+    border: none;
+    border-top: 0.5px solid rgba(255, 255, 255, 0.1);
+    color: #007AFF;
+    font-size: 17px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    letter-spacing: -0.3px;
+}
+
+.ios-action-sheet-button:first-child {
+    border-top: none;
+}
+
+.ios-action-sheet-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.ios-action-sheet-button:active {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.ios-action-sheet-button.destructive {
+    color: #FF3B30;
+    font-weight: 600;
+}
+
+.ios-action-sheet-button.cancel {
+    margin-top: 8px;
+    background: rgba(28, 28, 30, 0.98);
+    border-radius: 14px;
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    font-weight: 600;
+}
+
 
 /* Library List - iOS Style */
 .library-list {
     display: grid;
-    gap: 12px;
-    padding: 24px;
-    max-height: 70vh;
-    overflow-y: auto;
+    gap: 10px;
+    padding: 20px;
+    overflow-y: visible;
+    flex: 1;
 }
 
 .library-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.library-list::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.library-list::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 3px;
-}
-
-.library-list::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5);
+    display: none;
 }
 
 .library-item {
     display: flex;
     gap: 12px;
-    padding: 12px;
+    padding: 10px;
     background: rgba(255, 255, 255, 0.08);
     border: 0.5px solid rgba(255, 255, 255, 0.1);
-    border-radius: 14px;
+    border-radius: 12px;
     align-items: center;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -603,9 +733,9 @@ body {
 }
 
 .library-item-preview {
-    width: 70px;
-    height: 70px;
-    border-radius: 10px;
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
     overflow: hidden;
     background: rgba(0, 0, 0, 0.4);
     display: flex;
@@ -625,14 +755,14 @@ body {
 }
 
 .library-item-info h4 {
-    font-size: 17px;
-    font-weight: 600;
-    margin-bottom: 4px;
-    letter-spacing: -0.3px;
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 2px;
+    letter-spacing: -0.2px;
 }
 
 .library-item-info p {
-    font-size: 14px;
+    font-size: 13px;
     color: rgba(255, 255, 255, 0.6);
 }
 
@@ -642,16 +772,21 @@ body {
 }
 
 .icon-btn {
-    padding: 10px;
+    padding: 8px;
     background: rgba(255, 255, 255, 0.1);
     border: 0.5px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
+    border-radius: 8px;
     color: #fff;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.icon-btn svg {
+    width: 18px;
+    height: 18px;
 }
 
 .icon-btn:hover {
@@ -685,6 +820,7 @@ body {
     opacity: 0;
     transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
+    padding: 40px 20px;
 }
 
 .modal.visible {
@@ -698,14 +834,18 @@ body {
     border: 0.5px solid rgba(255, 255, 255, 0.15);
     border-radius: 20px;
     padding: 0;
-    width: 90%;
-    max-width: 700px;
-    max-height: 85vh;
-    overflow: hidden;
+    width: 100%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    overflow-x: hidden;
     position: relative;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
     transform: scale(0.95);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .modal.visible .modal-content {
@@ -713,49 +853,56 @@ body {
 }
 
 .modal-content::-webkit-scrollbar {
-    width: 10px;
+    width: 8px;
 }
 
 .modal-content::-webkit-scrollbar-track {
     background: transparent;
+    margin: 20px 0;
 }
 
 .modal-content::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
 }
 
 .modal-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .modal-content.large {
-    max-width: 900px;
+    max-width: 700px;
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 24px 24px 20px 24px;
+    padding: 20px;
     border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
-    background: rgba(28, 28, 30, 0.95);
+    background: rgba(28, 28, 30, 0.98);
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 100;
     backdrop-filter: blur(40px);
 }
 
 .modal-header h2 {
-    font-size: 24px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    flex: 1;
+}
+
+.modal-header .close-btn {
+    margin-left: 16px;
+    flex-shrink: 0;
 }
 
 .modal-actions {
     display: flex;
     gap: 12px;
-    padding: 20px 24px;
+    padding: 16px 20px;
     border-top: 0.5px solid rgba(255, 255, 255, 0.1);
     background: rgba(28, 28, 30, 0.95);
 }

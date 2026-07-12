@@ -9,6 +9,84 @@ let db = null;
 const PHOTO_DURATION = 3; // seconds
 const TRANSITION_DURATION = 1; // seconds
 
+// iOS-style Toast Notification
+function showToast(message, icon = '✓') {
+    const existingToast = document.querySelector('.ios-toast');
+    if (existingToast) {
+        existingToast.remove();
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'ios-toast';
+    toast.innerHTML = `
+        <div class="ios-toast-icon">${icon}</div>
+        <div>${message}</div>
+    `;
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400);
+    }, 2500);
+}
+
+// iOS-style Action Sheet (for confirmations)
+function showActionSheet(title, message, buttons) {
+    return new Promise((resolve) => {
+        const backdrop = document.createElement('div');
+        backdrop.className = 'ios-action-sheet-backdrop';
+
+        const sheet = document.createElement('div');
+        sheet.className = 'ios-action-sheet';
+
+        const buttonsHTML = buttons.map((btn, index) => 
+            `<button class="ios-action-sheet-button ${btn.style || ''}" data-index="${index}">${btn.text}</button>`
+        ).join('');
+
+        sheet.innerHTML = `
+            <div class="ios-action-sheet-content">
+                <div class="ios-action-sheet-header">
+                    <div class="ios-action-sheet-title">${title}</div>
+                    <div class="ios-action-sheet-message">${message}</div>
+                </div>
+                <div class="ios-action-sheet-buttons">
+                    ${buttonsHTML}
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(backdrop);
+        document.body.appendChild(sheet);
+
+        setTimeout(() => {
+            backdrop.classList.add('show');
+            sheet.classList.add('show');
+        }, 10);
+
+        const closeSheet = (result) => {
+            backdrop.classList.remove('show');
+            sheet.classList.remove('show');
+            setTimeout(() => {
+                backdrop.remove();
+                sheet.remove();
+            }, 350);
+            resolve(result);
+        };
+
+        backdrop.addEventListener('click', () => closeSheet(false));
+
+        sheet.querySelectorAll('.ios-action-sheet-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const index = parseInt(btn.dataset.index);
+                const action = buttons[index].action;
+                closeSheet(action ? action() : true);
+            });
+        });
+    });
+}
+
 // Initialize IndexedDB
 function initDB() {
     return new Promise((resolve, reject) => {
@@ -143,34 +221,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     const clearAllBtn = document.getElementById('clearAll');
     if (clearAllBtn) {
         clearAllBtn.addEventListener('click', async () => {
-            if (confirm('Delete all photos? This cannot be undone!')) {
-                // Clear the photos array
-                photos = [];
-                
-                // Clear IndexedDB
-                if (db) {
-                    const transaction = db.transaction(['photos'], 'readwrite');
-                    const store = transaction.objectStore('photos');
-                    await store.clear();
-                }
-                
-                // Also clear old localStorage just in case
-                localStorage.clear();
-                
-                // Stop the loop
-                stopLoop();
-                
-                // Show drop zone again
-                const dropZone = document.getElementById('dropZone');
-                dropZone.style.display = 'flex';
-                dropZone.style.opacity = '1';
-                
-                // Clear the display
-                const container = document.getElementById('currentContent');
-                if (container) container.innerHTML = '';
-                
-                alert('✓ All photos deleted!');
-            }
+            const result = await showActionSheet(
+                'Clear All Photos',
+                'This will permanently delete all photos from your memorial slideshow.',
+                [
+                    { 
+                        text: 'Delete All Photos', 
+                        style: 'destructive',
+                        action: async () => {
+                            // Clear the photos array
+                            photos = [];
+                            
+                            // Clear IndexedDB
+                            if (db) {
+                                const transaction = db.transaction(['photos'], 'readwrite');
+                                const store = transaction.objectStore('photos');
+                                await store.clear();
+                            }
+                            
+                            // Also clear old localStorage just in case
+                            localStorage.clear();
+                            
+                            // Stop the loop
+                            stopLoop();
+                            
+                            // Show drop zone again
+                            const dropZone = document.getElementById('dropZone');
+                            dropZone.style.display = 'flex';
+                            dropZone.style.opacity = '1';
+                            
+                            // Clear the display
+                            const container = document.getElementById('currentContent');
+                            if (container) container.innerHTML = '';
+                            
+                            showToast('All photos deleted', '🗑️');
+                            return true;
+                        }
+                    },
+                    { text: 'Cancel', style: 'cancel' }
+                ]
+            );
         });
     }
     
@@ -193,13 +283,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         displayCurrentContent();
                     }
                     
-                    alert('Photos shuffled! 🔀');
+                    showToast('Photos shuffled', '🔀');
                 } else {
-                    alert('Need at least 2 photos to shuffle!');
+                    showToast('Need at least 2 photos to shuffle', '⚠️');
                 }
             } catch (err) {
                 console.error('Shuffle error:', err);
-                alert('Error shuffling photos: ' + err.message);
+                showToast('Error shuffling photos', '⚠️');
             }
         });
     }
@@ -210,7 +300,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         fullscreenBtn.addEventListener('click', () => {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch(err => {
-                    alert('Could not enter fullscreen mode');
+                    showToast('Could not enter fullscreen', '⚠️');
                 });
             } else {
                 document.exitFullscreen();
@@ -486,8 +576,8 @@ function renderLibrary() {
     }
     
     // Add count header with iOS style
-    const countHeader = `<div style="padding: 16px; background: rgba(0, 122, 255, 0.15); border: 0.5px solid rgba(0, 122, 255, 0.3); border-radius: 14px; margin-bottom: 16px; text-align: center;">
-        <h3 style="font-size: 17px; font-weight: 600; letter-spacing: -0.3px;">📸 ${photos.length} Photos Loaded</h3>
+    const countHeader = `<div style="padding: 12px 16px; background: rgba(0, 122, 255, 0.15); border: 0.5px solid rgba(0, 122, 255, 0.3); border-radius: 12px; margin-bottom: 12px; text-align: center;">
+        <h3 style="font-size: 15px; font-weight: 600; letter-spacing: -0.2px;">📸 ${photos.length} Photos Loaded</h3>
     </div>`;
     
     list.innerHTML = countHeader + photos.map((photo, index) => `
@@ -500,7 +590,7 @@ function renderLibrary() {
             </div>
             <div class="library-item-actions">
                 <button class="icon-btn delete" onclick="deletePhoto(${index})" aria-label="Delete">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                     </svg>
                 </button>
@@ -510,20 +600,33 @@ function renderLibrary() {
 }
 
 function deletePhoto(index) {
-    if (confirm('Delete this photo?')) {
-        photos.splice(index, 1);
-        savePhotos();
-        renderLibrary();
-        
-        if (photos.length === 0) {
-            stopLoop();
-            document.getElementById('dropZone').style.display = 'flex';
-            document.getElementById('dropZone').style.opacity = '1';
-        } else if (currentIndex >= photos.length) {
-            currentIndex = 0;
-            displayCurrentContent();
-        }
-    }
+    showActionSheet(
+        'Delete Photo',
+        'Are you sure you want to remove this photo?',
+        [
+            {
+                text: 'Delete Photo',
+                style: 'destructive',
+                action: () => {
+                    photos.splice(index, 1);
+                    savePhotos();
+                    renderLibrary();
+                    
+                    if (photos.length === 0) {
+                        stopLoop();
+                        document.getElementById('dropZone').style.display = 'flex';
+                        document.getElementById('dropZone').style.opacity = '1';
+                    } else if (currentIndex >= photos.length) {
+                        currentIndex = 0;
+                        displayCurrentContent();
+                    }
+                    
+                    showToast('Photo deleted', '🗑️');
+                }
+            },
+            { text: 'Cancel', style: 'cancel' }
+        ]
+    );
 }
 
 async function shufflePhotos() {
