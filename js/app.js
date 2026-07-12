@@ -5,9 +5,19 @@ let isPlaying = false;
 let loopTimeout = null;
 let db = null;
 
-// Fixed settings - 3 seconds per photo, 1 second transition
-const PHOTO_DURATION = 3; // seconds
-const TRANSITION_DURATION = 1; // seconds
+// Configurable settings - defaults
+let PHOTO_DURATION = 3; // seconds
+let TRANSITION_DURATION = 1; // seconds
+let TRANSITION_EFFECT = 'fade'; // fade, slide, zoom, dissolve
+
+// Background music
+let audioElement = null;
+let audioFileName = '';
+let audioData = null;
+
+// Display preferences
+let displayMode = 'contain'; // 'contain' (fit) or 'cover' (fill)
+let showCounter = true;
 
 // Initialize Lottie Clock Animation
 function initClockAnimation() {
@@ -32,10 +42,29 @@ function showToast(message, icon = '✓') {
 
     const toast = document.createElement('div');
     toast.className = 'ios-toast';
-    toast.innerHTML = `
-        <div class="ios-toast-icon">${icon}</div>
-        <div>${message}</div>
-    `;
+    
+    // Check if it's a photo addition message (contains "photo" and "added")
+    const isPhotoAddition = message.includes('photo') && message.includes('added');
+    
+    if (isPhotoAddition) {
+        // Special styling for photo additions
+        toast.classList.add('ios-toast-photo');
+        toast.innerHTML = `
+            <div class="ios-toast-content">
+                <div class="ios-toast-icon-large">${icon}</div>
+                <div class="ios-toast-text">
+                    <div class="ios-toast-message">${message}</div>
+                </div>
+            </div>
+        `;
+    } else {
+        // Standard toast
+        toast.innerHTML = `
+            <div class="ios-toast-icon">${icon}</div>
+            <div>${message}</div>
+        `;
+    }
+    
     document.body.appendChild(toast);
 
     setTimeout(() => toast.classList.add('show'), 10);
@@ -104,7 +133,7 @@ function showActionSheet(title, message, buttons) {
 // Initialize IndexedDB
 function initDB() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open('MemorialDB', 1);
+        const request = indexedDB.open('MemorialDB', 2); // Increment version for music storage
         
         request.onerror = () => reject(request.error);
         request.onsuccess = () => {
@@ -114,8 +143,15 @@ function initDB() {
         
         request.onupgradeneeded = (event) => {
             db = event.target.result;
+            
+            // Create photos store if it doesn't exist
             if (!db.objectStoreNames.contains('photos')) {
                 db.createObjectStore('photos', { keyPath: 'id' });
+            }
+            
+            // Create music store if it doesn't exist
+            if (!db.objectStoreNames.contains('music')) {
+                db.createObjectStore('music', { keyPath: 'id' });
             }
         };
     });
@@ -161,6 +197,61 @@ async function loadPhotos() {
     });
 }
 
+// Save background music to IndexedDB
+async function saveMusic(fileName, audioDataUrl) {
+    if (!db) await initDB();
+    
+    const transaction = db.transaction(['music'], 'readwrite');
+    const store = transaction.objectStore('music');
+    
+    // Clear existing music first
+    await store.clear();
+    
+    // Save new music
+    await store.add({
+        id: 'background-music',
+        fileName: fileName,
+        data: audioDataUrl
+    });
+    
+    console.log(`✓ Saved music: ${fileName}`);
+}
+
+// Load background music from IndexedDB
+async function loadMusic() {
+    if (!db) await initDB();
+    
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['music'], 'readonly');
+        const store = transaction.objectStore('music');
+        const request = store.get('background-music');
+        
+        request.onsuccess = () => {
+            const music = request.result;
+            if (music) {
+                console.log(`✓ Loaded music: ${music.fileName}`);
+                audioFileName = music.fileName;
+                audioData = music.data;
+                initializeAudioPlayer(music.fileName, music.data);
+            }
+            resolve(music);
+        };
+        
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// Remove background music from IndexedDB
+async function removeMusic() {
+    if (!db) await initDB();
+    
+    const transaction = db.transaction(['music'], 'readwrite');
+    const store = transaction.objectStore('music');
+    await store.clear();
+    
+    console.log('✓ Removed music');
+}
+
 // Initialize on load
 document.addEventListener('DOMContentLoaded', async () => {
     // Initialize clock animation
@@ -169,9 +260,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize DB and load photos FIRST
     await initDB();
     await loadPhotos();
+    await loadMusic(); // Load saved music if exists
     
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
+    const addPhotosBtn = document.getElementById('addPhotosBtn');
     
     // If we have photos, hide drop zone and start
     if (photos.length > 0) {
@@ -179,26 +272,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         startLoop();
     }
     
-    // Drag and drop on drop zone
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.style.background = 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)';
-    });
-    
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-    });
-    
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-        handleFiles(files);
-    });
-    
-    // Click drop zone to browse
-    dropZone.addEventListener('click', () => {
-        fileInput.click();
-    });
+    // Drag and drop on button area only
+    if (addPhotosBtn) {
+        addPhotosBtn.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            addPhotosBtn.style.background = 'rgba(255, 255, 255, 0.3)';
+            addPhotosBtn.style.transform = 'scale(1.05)';
+        });
+        
+        addPhotosBtn.addEventListener('dragleave', (e) => {
+            e.stopPropagation();
+            addPhotosBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+            addPhotosBtn.style.transform = 'scale(1)';
+        });
+        
+        addPhotosBtn.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            addPhotosBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+            addPhotosBtn.style.transform = 'scale(1)';
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            handleFiles(files);
+        });
+        
+        // Click button to browse
+        addPhotosBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+        
+        // Hover effect
+        addPhotosBtn.addEventListener('mouseenter', () => {
+            addPhotosBtn.style.background = 'rgba(255, 255, 255, 0.25)';
+            addPhotosBtn.style.transform = 'scale(1.02)';
+        });
+        
+        addPhotosBtn.addEventListener('mouseleave', () => {
+            addPhotosBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+            addPhotosBtn.style.transform = 'scale(1)';
+        });
+    }
     
     // File input change
     fileInput.addEventListener('change', (e) => {
@@ -206,6 +320,53 @@ document.addEventListener('DOMContentLoaded', async () => {
         handleFiles(files);
         e.target.value = '';
     });
+    
+    // Display Mode Controls
+    const displayModeBtns = document.querySelectorAll('.display-mode-btn');
+    const displayModeDesc = document.getElementById('displayModeDesc');
+    
+    displayModeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mode = btn.dataset.mode;
+            displayMode = mode;
+            
+            // Update active state
+            displayModeBtns.forEach(b => {
+                b.style.background = 'rgba(255, 255, 255, 0.1)';
+                b.style.border = '1px solid rgba(255, 255, 255, 0.15)';
+                b.classList.remove('active');
+            });
+            btn.style.background = 'rgba(0, 122, 255, 0.3)';
+            btn.style.border = '1px solid rgba(0, 122, 255, 0.5)';
+            btn.classList.add('active');
+            
+            // Update description
+            if (mode === 'contain') {
+                displayModeDesc.textContent = 'Shows full image with black bars if needed';
+            } else {
+                displayModeDesc.textContent = 'Fills entire screen, may crop edges';
+            }
+            
+            // Apply to current image
+            updateImageDisplay();
+            
+            showToast(`Display: ${mode === 'contain' ? 'Fit Screen' : 'Fill Screen'}`, '🖼️');
+        });
+    });
+    
+    // Photo Counter Toggle
+    const showPhotoCounter = document.getElementById('showPhotoCounter');
+    const photoCounter = document.getElementById('photoCounter');
+    
+    if (showPhotoCounter) {
+        showPhotoCounter.addEventListener('change', (e) => {
+            showCounter = e.target.checked;
+            if (photoCounter) {
+                photoCounter.style.display = showCounter ? 'block' : 'none';
+            }
+            showToast(`Counter: ${showCounter ? 'On' : 'Off'}`, showCounter ? '👁️' : '🚫');
+        });
+    }
     
     // Settings button
     const settingsBtn = document.getElementById('settingsBtn');
@@ -378,6 +539,146 @@ document.addEventListener('DOMContentLoaded', async () => {
         closeLibraryBtn.addEventListener('click', () => {
             libraryModal.classList.remove('visible');
             setTimeout(() => libraryModal.classList.add('hidden'), 300);
+        });
+    }
+    
+    // Speed control buttons
+    const speedBtns = document.querySelectorAll('.speed-btn');
+    speedBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const speed = parseInt(btn.dataset.speed);
+            PHOTO_DURATION = speed;
+            
+            // Update active state
+            speedBtns.forEach(b => {
+                b.style.background = 'rgba(255, 255, 255, 0.1)';
+                b.style.border = '1px solid rgba(255, 255, 255, 0.15)';
+                b.classList.remove('active');
+            });
+            btn.style.background = 'rgba(0, 122, 255, 0.3)';
+            btn.style.border = '1px solid rgba(0, 122, 255, 0.5)';
+            btn.classList.add('active');
+            
+            showToast(`Speed set to ${speed} second${speed > 1 ? 's' : ''}`, '⏱️');
+            
+            // Restart slideshow if playing
+            if (isPlaying) {
+                stopLoop();
+                startLoop();
+            }
+        });
+    });
+    
+    // Transition effect buttons
+    const transitionBtns = document.querySelectorAll('.transition-btn');
+    transitionBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const transition = btn.dataset.transition;
+            TRANSITION_EFFECT = transition;
+            
+            // Update active state
+            transitionBtns.forEach(b => {
+                b.style.background = 'rgba(255, 255, 255, 0.1)';
+                b.style.border = '1px solid rgba(255, 255, 255, 0.15)';
+                b.classList.remove('active');
+            });
+            btn.style.background = 'rgba(0, 122, 255, 0.3)';
+            btn.style.border = '1px solid rgba(0, 122, 255, 0.5)';
+            btn.classList.add('active');
+            
+            const effectName = transition.charAt(0).toUpperCase() + transition.slice(1);
+            showToast(`Transition: ${effectName}`, '✨');
+        });
+    });
+    
+    // Background Music Controls
+    const uploadMusicBtn = document.getElementById('uploadMusicBtn');
+    const musicFileInput = document.getElementById('musicFileInput');
+    const musicPlayPauseBtn = document.getElementById('musicPlayPauseBtn');
+    const removeMusicBtn = document.getElementById('removeMusicBtn');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const volumeValue = document.getElementById('volumeValue');
+    
+    if (uploadMusicBtn) {
+        uploadMusicBtn.addEventListener('click', () => {
+            musicFileInput.click();
+        });
+    }
+    
+    if (musicFileInput) {
+        musicFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('audio/')) {
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    const audioDataUrl = event.target.result;
+                    await saveMusic(file.name, audioDataUrl);
+                    audioFileName = file.name;
+                    audioData = audioDataUrl;
+                    initializeAudioPlayer(file.name, audioDataUrl);
+                    showToast('Music uploaded', '🎵');
+                };
+                reader.readAsDataURL(file);
+            }
+            e.target.value = '';
+        });
+    }
+    
+    if (musicPlayPauseBtn) {
+        musicPlayPauseBtn.addEventListener('click', () => {
+            if (audioElement) {
+                if (audioElement.paused) {
+                    audioElement.play();
+                    document.getElementById('musicPlayIcon').classList.add('hidden');
+                    document.getElementById('musicPauseIcon').classList.remove('hidden');
+                } else {
+                    audioElement.pause();
+                    document.getElementById('musicPlayIcon').classList.remove('hidden');
+                    document.getElementById('musicPauseIcon').classList.add('hidden');
+                }
+            }
+        });
+    }
+    
+    if (removeMusicBtn) {
+        removeMusicBtn.addEventListener('click', async () => {
+            const result = await showActionSheet(
+                'Remove Music',
+                'Are you sure you want to remove the background music?',
+                [
+                    {
+                        text: 'Remove Music',
+                        style: 'destructive',
+                        action: async () => {
+                            if (audioElement) {
+                                audioElement.pause();
+                                audioElement.src = '';
+                                audioElement = null;
+                            }
+                            await removeMusic();
+                            audioFileName = '';
+                            audioData = null;
+                            
+                            document.getElementById('musicControls').style.display = 'none';
+                            document.getElementById('uploadMusicBtn').style.display = 'flex';
+                            
+                            showToast('Music removed', '🗑️');
+                            return true;
+                        }
+                    },
+                    { text: 'Cancel', style: 'cancel' }
+                ]
+            );
+        });
+    }
+    
+    if (volumeSlider) {
+        volumeSlider.addEventListener('input', (e) => {
+            const volume = e.target.value;
+            volumeValue.textContent = `${volume}%`;
+            if (audioElement) {
+                audioElement.volume = volume / 100;
+            }
         });
     }
 });
@@ -573,12 +874,21 @@ function displayCurrentContent() {
     const photo = photos[currentIndex];
     if (!photo) return;
     
+    // Update photo counter
+    updatePhotoCounter();
+    
     // Fade out
     container.style.opacity = '0';
     container.style.transition = `opacity ${TRANSITION_DURATION}s ease-in-out`;
     
     setTimeout(() => {
-        container.innerHTML = `<img src="${photo.data}" alt="Memorial photo">`;
+        const img = document.createElement('img');
+        img.src = photo.data;
+        img.alt = 'Memorial photo';
+        img.style.objectFit = displayMode; // Apply display mode (contain or cover)
+        
+        container.innerHTML = '';
+        container.appendChild(img);
         
         setTimeout(() => {
             container.style.opacity = '1';
@@ -588,6 +898,23 @@ function displayCurrentContent() {
             scheduleNext();
         }
     }, TRANSITION_DURATION * 1000);
+}
+
+// Update image display when mode changes
+function updateImageDisplay() {
+    const container = document.getElementById('currentContent');
+    const img = container ? container.querySelector('img') : null;
+    if (img) {
+        img.style.objectFit = displayMode;
+    }
+}
+
+// Update photo counter
+function updatePhotoCounter() {
+    const counterText = document.getElementById('photoCounterText');
+    if (counterText && photos.length > 0) {
+        counterText.textContent = `${currentIndex + 1} / ${photos.length}`;
+    }
 }
 
 function scheduleNext() {
@@ -671,4 +998,50 @@ async function shufflePhotos() {
         [photos[i], photos[j]] = [photos[j], photos[i]];
     }
     await savePhotos();
+}
+
+// Initialize audio player UI
+function initializeAudioPlayer(fileName, audioDataUrl) {
+    // Create audio element if it doesn't exist
+    if (!audioElement) {
+        audioElement = new Audio();
+        audioElement.loop = true;
+        audioElement.volume = 0.7; // Default 70% volume
+        
+        // Update time display
+        audioElement.addEventListener('timeupdate', updateMusicTime);
+        audioElement.addEventListener('loadedmetadata', updateMusicTime);
+    }
+    
+    audioElement.src = audioDataUrl;
+    
+    // Show controls, hide upload button
+    document.getElementById('musicControls').style.display = 'block';
+    document.getElementById('uploadMusicBtn').style.display = 'none';
+    
+    // Update file name display
+    document.getElementById('musicFileName').textContent = fileName;
+    
+    // Reset play/pause icons
+    document.getElementById('musicPlayIcon').classList.remove('hidden');
+    document.getElementById('musicPauseIcon').classList.add('hidden');
+}
+
+// Update music time display
+function updateMusicTime() {
+    if (!audioElement) return;
+    
+    const current = audioElement.currentTime;
+    const duration = audioElement.duration || 0;
+    
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+    
+    const musicTime = document.getElementById('musicTime');
+    if (musicTime) {
+        musicTime.textContent = `${formatTime(current)} / ${formatTime(duration)}`;
+    }
 }
