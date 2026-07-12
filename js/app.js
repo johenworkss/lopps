@@ -9,6 +9,20 @@ let db = null;
 const PHOTO_DURATION = 3; // seconds
 const TRANSITION_DURATION = 1; // seconds
 
+// Initialize Lottie Clock Animation
+function initClockAnimation() {
+    const clockContainer = document.getElementById('clockAnimation');
+    if (clockContainer && typeof lottie !== 'undefined') {
+        lottie.loadAnimation({
+            container: clockContainer,
+            renderer: 'svg',
+            loop: true,
+            autoplay: true,
+            path: 'icons/clock.json'
+        });
+    }
+}
+
 // iOS-style Toast Notification
 function showToast(message, icon = '✓') {
     const existingToast = document.querySelector('.ios-toast');
@@ -149,6 +163,9 @@ async function loadPhotos() {
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize clock animation
+    initClockAnimation();
+    
     // Initialize DB and load photos FIRST
     await initDB();
     await loadPhotos();
