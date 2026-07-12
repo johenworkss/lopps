@@ -376,6 +376,7 @@ function handleFiles(files) {
     
     let loaded = 0;
     const totalFiles = files.length;
+    const startingPhotoCount = photos.length;
     
     files.forEach((file, index) => {
         const reader = new FileReader();
@@ -426,24 +427,41 @@ function handleFiles(files) {
                     try {
                         await savePhotos();
                         progressText.textContent = `✓ Added ${totalFiles} photos!`;
+                        
+                        // Show iOS toast notification
+                        const photosAdded = totalFiles;
+                        const totalPhotos = photos.length;
+                        if (startingPhotoCount > 0) {
+                            // User added more photos to existing collection
+                            showToast(`${photosAdded} photo${photosAdded > 1 ? 's' : ''} added • ${totalPhotos} total`, '✓');
+                        } else {
+                            // First photos added
+                            showToast(`${photosAdded} photo${photosAdded > 1 ? 's' : ''} added`, '✓');
+                        }
                     } catch (err) {
                         progressText.textContent = `⚠ Error saving photos`;
                         console.error(err);
+                        showToast('Error saving photos', '⚠️');
                     }
                     
                     setTimeout(() => {
                         progress.style.display = 'none';
                         
-                        // Hide drop zone
+                        // Hide drop zone if it's showing
                         const dropZone = document.getElementById('dropZone');
-                        dropZone.style.opacity = '0';
-                        setTimeout(() => {
-                            dropZone.style.display = 'none';
-                        }, 300);
+                        if (dropZone.style.display !== 'none') {
+                            dropZone.style.opacity = '0';
+                            setTimeout(() => {
+                                dropZone.style.display = 'none';
+                            }, 300);
+                        }
                         
-                        // Start if first photos
-                        if (!isPlaying) {
+                        // Start if first photos or restart if already playing
+                        if (startingPhotoCount === 0) {
                             startLoop();
+                        } else if (isPlaying) {
+                            // If already playing, continue playing
+                            displayCurrentContent();
                         }
                     }, 1000);
                 }
