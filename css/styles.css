@@ -182,21 +182,16 @@ body {
     transform: scale(1.05);
 }
 
-/* Control Overlay - iOS Style */
+/* Control Overlay - Modern Remote */
 .control-overlay {
     position: absolute;
     bottom: 80px;
     left: 50%;
     transform: translateX(-50%);
-    padding: 16px;
-    background: rgba(28, 28, 30, 0.85);
-    backdrop-filter: blur(40px) saturate(180%);
-    border-radius: 24px;
-    border: 0.5px solid rgba(255, 255, 255, 0.15);
+    padding: 20px;
     opacity: 0;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .control-overlay.visible {
@@ -210,23 +205,22 @@ body {
 
 .controls-top {
     display: flex;
-    gap: 12px;
-    align-items: flex-start;
+    gap: 16px;
+    align-items: center;
 }
 
 .play-settings-group {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 16px;
 }
 
 .control-btn {
-    width: 44px;
-    height: 44px;
+    width: 64px;
+    height: 64px;
     border: none;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
     color: #fff;
     cursor: pointer;
     display: flex;
@@ -235,51 +229,61 @@ body {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
     flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
+/* Prev/Next Buttons (Red) */
+.control-btn#prevBtn,
+.control-btn#nextBtn {
+    background: rgba(255, 59, 48, 0.9);
+}
+
+.control-btn#prevBtn:hover,
+.control-btn#nextBtn:hover {
+    background: rgba(255, 59, 48, 1);
+    transform: scale(1.1);
+}
+
+/* Play/Pause Button (Blue) */
 .control-btn.large {
-    width: 54px;
-    height: 54px;
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.control-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: scale(1.05);
+    width: 80px;
+    height: 80px;
+    background: rgba(0, 122, 255, 0.9);
 }
 
 .control-btn.large:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(0, 122, 255, 1);
+    transform: scale(1.1);
 }
 
 .control-btn:active {
-    transform: scale(0.92);
-    background: rgba(255, 255, 255, 0.15);
+    transform: scale(0.95);
 }
 
+/* Settings Button (Green) */
 .settings-btn {
-    width: 44px;
-    height: 44px;
+    width: 64px;
+    height: 64px;
     border: none;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    background: rgba(52, 199, 89, 0.9);
     color: #fff;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 0.5px solid rgba(255, 255, 255, 0.1);
     flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .settings-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: scale(1.05);
+    background: rgba(52, 199, 89, 1);
+    transform: scale(1.1);
 }
 
 .settings-btn:active {
-    transform: scale(0.92);
+    transform: scale(0.95);
 }
 
 /* Onboarding Screen */

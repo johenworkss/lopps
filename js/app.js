@@ -1164,13 +1164,13 @@ function displayCurrentContent() {
                 }
             });
             
+            // Only auto-advance if video is not looping
             if (!loopVideos && isPlaying) {
                 video.addEventListener('ended', () => {
                     scheduleNext();
                 });
-            } else if (isPlaying) {
-                scheduleNext();
             }
+            // If looping, don't auto-advance (stays on video forever)
             
             container.appendChild(video);
         } else {
@@ -1249,7 +1249,17 @@ function renderLibrary() {
         <h3 style="font-size: 15px; font-weight: 600; letter-spacing: -0.2px;">${countText}</h3>
     </div>`;
     
-    list.innerHTML = countHeader + photos.map((item, index) => `
+    list.innerHTML = countHeader + photos.map((item, index) => {
+        let previewHTML = '';
+        if (item.type === 'video') {
+            // For videos, use a <video> element with preload="metadata"
+            previewHTML = `<video src="${item.data}" preload="metadata" muted playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>`;
+        } else {
+            // For photos, use <img>
+            previewHTML = `<img src="${item.data}" alt="Photo ${index + 1}" style="width: 100%; height: 100%; object-fit: cover;">`;
+        }
+        
+        return `
         <div class="library-item" draggable="true" data-index="${index}">
             <div class="drag-handle">
                 <svg viewBox="0 0 24 24" fill="currentColor">
@@ -1257,7 +1267,7 @@ function renderLibrary() {
                 </svg>
             </div>
             <div class="library-item-preview">
-                <img src="${item.data}" alt="${item.type === 'video' ? 'Video' : 'Photo'} ${index + 1}">
+                ${previewHTML}
                 ${item.type === 'video' ? '<div class="video-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>VIDEO</div>' : ''}
             </div>
             <div class="library-item-info">
@@ -1271,7 +1281,7 @@ function renderLibrary() {
                 </button>
             </div>
         </div>
-    `).join('');
+    `}).join('');
     
     // Add drag and drop listeners
     const items = list.querySelectorAll('.library-item');
@@ -1281,6 +1291,14 @@ function renderLibrary() {
         item.addEventListener('dragover', handleDragOver);
         item.addEventListener('dragleave', handleDragLeave);
         item.addEventListener('drop', handleDrop);
+    });
+    
+    // For videos, seek to 0.1s to show a thumbnail
+    const videoElements = list.querySelectorAll('.library-item-preview video');
+    videoElements.forEach(video => {
+        video.addEventListener('loadedmetadata', () => {
+            video.currentTime = 0.1; // Seek to first frame
+        });
     });
 }
 
