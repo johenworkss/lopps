@@ -316,9 +316,7 @@ async function renderPresets() {
         <div class="preset-btn" data-id="${preset.id}">
             <span onclick="applyPreset(${JSON.stringify(preset).replace(/"/g, '&quot;')})">${preset.name}</span>
             <span class="delete-preset" onclick="event.stopPropagation(); deletePreset(${preset.id}, '${preset.name.replace(/'/g, "\\'")}')">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
-                </svg>
+                <i class="bi bi-x-lg" style="font-size: 0.625rem;"></i>
             </span>
         </div>
     `).join('');
@@ -352,16 +350,20 @@ async function loadPhotos() {
         const store = transaction.objectStore('photos');
         const request = store.getAll();
         
-        request.onsuccess = () => {
+        request.onsuccess = async () => {
             photos = request.result || [];
-            // Ensure all items have a type (default to 'image' for existing items)
+            // Ensure all items have a type (detect video from data URL if needed)
             photos = photos.map(item => ({
                 ...item,
-                type: item.type || 'image'
+                type: item.type || (item.data && item.data.startsWith('data:video') ? 'video' : 'image')
             }));
             // Sort by ID to maintain order
             photos.sort((a, b) => a.id - b.id);
             console.log(`✓ Loaded ${photos.length} items from IndexedDB`);
+            
+            // Save updated items back to DB with type property
+            await savePhotos();
+            
             resolve(photos);
         };
         
@@ -1130,18 +1132,60 @@ function displayCurrentContent() {
     
     const item = photos[currentIndex];
     if (!item) return;
+
+    // Debug: log what type we're dealing with
+    console.log('Displaying item:', { index: currentIndex, type: item.type, item, transition: TRANSITION_EFFECT });
     
     // Update photo counter
     updatePhotoCounter();
     
-    // Fade out
-    container.style.opacity = '0';
-    container.style.transition = `opacity ${TRANSITION_DURATION}s ease-in-out`;
+    // Clear any existing timeout to prevent conflicts
+    if (loopTimeout) {
+        clearTimeout(loopTimeout);
+        loopTimeout = null;
+    }
+    
+    // Reset any previous transition styles
+    container.style.transform = '';
+    container.style.filter = '';
+    container.style.transition = '';
+    
+    // Apply transition out effect
+    switch (TRANSITION_EFFECT) {
+        case 'slide':
+            container.style.transition = `transform ${TRANSITION_DURATION}s ease-in-out, opacity ${TRANSITION_DURATION}s ease-in-out`;
+            container.style.transform = 'translateX(-100%)';
+            container.style.opacity = '0';
+            break;
+        case 'zoom':
+            container.style.transition = `transform ${TRANSITION_DURATION}s ease-in-out, opacity ${TRANSITION_DURATION}s ease-in-out`;
+            container.style.transform = 'scale(0.8)';
+            container.style.opacity = '0';
+            break;
+        case 'dissolve':
+            container.style.transition = `opacity ${TRANSITION_DURATION}s linear`;
+            container.style.opacity = '0';
+            break;
+        case 'fade':
+        default:
+            container.style.transition = `opacity ${TRANSITION_DURATION}s ease-in-out`;
+            container.style.opacity = '0';
+            break;
+    }
     
     setTimeout(() => {
         container.innerHTML = '';
         
+        // Reset transition styles for new content
+        container.style.transform = '';
+        container.style.filter = '';
+        
         if (item.type === 'video') {
+            // ================================================
+            // VIDEO HANDLING
+            // ================================================
+            console.log('Displaying VIDEO');
+            
             // Display video
             const video = document.createElement('video');
             video.src = item.data;
@@ -1155,8 +1199,9 @@ function displayCurrentContent() {
             }
             
             video.addEventListener('loadedmetadata', () => {
+                // Apply transition in effect
                 setTimeout(() => {
-                    container.style.opacity = '1';
+                    applyTransitionIn(container);
                 }, 50);
                 
                 if (autoPlayVideos && isPlaying) {
@@ -1164,16 +1209,25 @@ function displayCurrentContent() {
                 }
             });
             
-            // Only auto-advance if video is not looping
+            // Only auto-advance if video is NOT looping
             if (!loopVideos && isPlaying) {
+                console.log('Video will auto-advance when ended');
                 video.addEventListener('ended', () => {
+                    console.log('Video ended, advancing');
                     scheduleNext();
                 });
+            } else {
+                console.log('Video is looping, no auto-advance');
             }
-            // If looping, don't auto-advance (stays on video forever)
             
             container.appendChild(video);
+            
         } else {
+            // ================================================
+            // PHOTO HANDLING
+            // ================================================
+            console.log('Displaying PHOTO');
+            
             // Display image
             const img = document.createElement('img');
             img.src = item.data;
@@ -1182,15 +1236,55 @@ function displayCurrentContent() {
             
             container.appendChild(img);
             
+            // Apply transition in effect
             setTimeout(() => {
-                container.style.opacity = '1';
+                applyTransitionIn(container);
             }, 50);
             
             if (isPlaying) {
+                console.log('Scheduling next photo');
                 scheduleNext();
             }
         }
     }, TRANSITION_DURATION * 1000);
+}
+
+function applyTransitionIn(container) {
+    switch (TRANSITION_EFFECT) {
+        case 'slide':
+            container.style.transition = `transform ${TRANSITION_DURATION}s ease-in-out, opacity ${TRANSITION_DURATION}s ease-in-out`;
+            container.style.transform = 'translateX(100%)';
+            container.style.opacity = '0';
+            setTimeout(() => {
+                container.style.transform = 'translateX(0)';
+                container.style.opacity = '1';
+            }, 50);
+            break;
+        case 'zoom':
+            container.style.transition = `transform ${TRANSITION_DURATION}s ease-in-out, opacity ${TRANSITION_DURATION}s ease-in-out`;
+            container.style.transform = 'scale(1.2)';
+            container.style.opacity = '0';
+            setTimeout(() => {
+                container.style.transform = 'scale(1)';
+                container.style.opacity = '1';
+            }, 50);
+            break;
+        case 'dissolve':
+            container.style.transition = `opacity ${TRANSITION_DURATION}s linear`;
+            container.style.opacity = '0';
+            setTimeout(() => {
+                container.style.opacity = '1';
+            }, 50);
+            break;
+        case 'fade':
+        default:
+            container.style.transition = `opacity ${TRANSITION_DURATION}s ease-in-out`;
+            container.style.opacity = '0';
+            setTimeout(() => {
+                container.style.opacity = '1';
+            }, 50);
+            break;
+    }
 }
 
 // Update image display when mode changes
@@ -1227,6 +1321,12 @@ function renderLibrary() {
     const list = document.getElementById('libraryList');
     if (!list) return;
     
+    // Ensure all items have type property
+    photos = photos.map(item => ({
+        ...item,
+        type: item.type || (item.data && item.data.startsWith('data:video') ? 'video' : 'image')
+    }));
+    
     if (photos.length === 0) {
         list.innerHTML = '<p style="text-align: center; opacity: 0.6; padding: 40px;">No photos or videos yet.</p>';
         return;
@@ -1252,8 +1352,16 @@ function renderLibrary() {
     list.innerHTML = countHeader + photos.map((item, index) => {
         let previewHTML = '';
         if (item.type === 'video') {
-            // For videos, use a <video> element with preload="metadata"
-            previewHTML = `<video src="${item.data}" preload="metadata" muted playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>`;
+            // For videos, use a <video> element
+            previewHTML = `
+                <video 
+                    id="lib-video-${index}"
+                    src="${item.data}" 
+                    muted 
+                    playsinline 
+                    preload="auto"
+                    style="width: 100%; height: 100%; object-fit: cover; background: #000;"
+                ></video>`;
         } else {
             // For photos, use <img>
             previewHTML = `<img src="${item.data}" alt="Photo ${index + 1}" style="width: 100%; height: 100%; object-fit: cover;">`;
@@ -1262,22 +1370,18 @@ function renderLibrary() {
         return `
         <div class="library-item" draggable="true" data-index="${index}">
             <div class="drag-handle">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm0-6c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm0-6c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm6 12c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm0-6c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm0-6c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2z"/>
-                </svg>
+                <i class="bi bi-grip-vertical" style="font-size: 1.125rem;"></i>
             </div>
             <div class="library-item-preview">
                 ${previewHTML}
-                ${item.type === 'video' ? '<div class="video-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>VIDEO</div>' : ''}
+                ${item.type === 'video' ? '<div class="video-badge"><i class="bi bi-play-fill" style="font-size: 0.625rem;"></i> VIDEO</div>' : ''}
             </div>
             <div class="library-item-info">
                 <h4>${item.type === 'video' ? 'Video' : 'Photo'} ${index + 1}</h4>
             </div>
             <div class="library-item-actions">
                 <button class="icon-btn delete" onclick="deletePhoto(${index})" aria-label="Delete">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                    </svg>
+                    <i class="bi bi-trash" style="font-size: 1.125rem;"></i>
                 </button>
             </div>
         </div>
@@ -1293,12 +1397,31 @@ function renderLibrary() {
         item.addEventListener('drop', handleDrop);
     });
     
-    // For videos, seek to 0.1s to show a thumbnail
-    const videoElements = list.querySelectorAll('.library-item-preview video');
-    videoElements.forEach(video => {
-        video.addEventListener('loadedmetadata', () => {
-            video.currentTime = 0.1; // Seek to first frame
-        });
+    // For videos, try to load a thumbnail
+    photos.forEach((item, index) => {
+        if (item.type === 'video') {
+            const video = document.getElementById(`lib-video-${index}`);
+            if (video) {
+                video.addEventListener('loadeddata', () => {
+                    // Try to seek to 0.5s for a clear frame
+                    try {
+                        video.currentTime = Math.min(0.5, video.duration || 0.5);
+                    } catch (e) {
+                        console.log('Could not seek video for thumbnail');
+                    }
+                });
+                
+                // Also try to load with a small play/pause to trigger frame display
+                video.addEventListener('canplay', () => {
+                    video.play().then(() => {
+                        video.pause();
+                        try {
+                            video.currentTime = Math.min(0.5, video.duration || 0.5);
+                        } catch (e) {}
+                    }).catch(() => {});
+                });
+            }
+        }
     });
 }
 
